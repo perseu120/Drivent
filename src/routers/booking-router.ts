@@ -3,8 +3,8 @@ import Router from "express";
 const bookingRouter = Router();
 
 bookingRouter
-  .get("/booking")
-  .post("/booking")
-  .put("/booking");
+  .get("/")
+  .post("/")
+  .put("/");
 
 export { bookingRouter };
