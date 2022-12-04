@@ -24,7 +24,7 @@ async function createBooking(roomId: number, userId: number) {
     if(booking.userId === userId || booking.User.id === userId) throw ForbiddenError();
   });
 
-  const createBooking = await bookingRepository.creatBooking(roomId, userId);
+  const createBooking = await bookingRepository.creatBooking(userId, roomId);
 
   return createBooking;
 }

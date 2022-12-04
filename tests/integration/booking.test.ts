@@ -3,9 +3,8 @@ import  httpStatus  from "http-status";
 import app, { init } from "@/app";
 import supertest from "supertest";
 import { cleanDb, generateValidToken } from "../helpers";
-import { createEnrollmentWithAddress, createHotel, createRoomWithHotelId, createUser } from "../factories";
+import { createEnrollmentWithAddress, createHotel, createRoomWithHotelId, createUser, createBooking } from "../factories";
 import faker from "@faker-js/faker";
-import { createBooking } from "../factories/booking-factory";
 
 beforeAll(async () => {
   await init();
@@ -96,7 +95,6 @@ describe("POST /booking", () => {
   });
 
   it("should return 404 when room id does not exist", async () => {
-    faker.seed(99);
     const userCreate = await createUser();
     const token = await generateValidToken(userCreate);
     await createEnrollmentWithAddress(userCreate);
@@ -108,5 +106,61 @@ describe("POST /booking", () => {
     const response = await server.post("/booking").set("Authorization", `Bearer ${token}`).send(body);
 
     expect(response.status).toBe(httpStatus.NOT_FOUND);
+  });
+
+  it("if the room is full it should return 403", async () => {
+    const userCreate = await createUser();
+    const user2Create = await createUser();
+    const user3Create = await createUser();
+    const token = await generateValidToken(userCreate);
+    await createEnrollmentWithAddress(userCreate);
+    const hotelCreate = await createHotel();
+    const createRoom = await createRoomWithHotelId(hotelCreate.id);
+
+    createBooking(userCreate.id, createRoom.id);
+    createBooking(user2Create.id, createRoom.id);
+    createBooking(user3Create.id, createRoom.id);
+    const body = {
+      "roomId": createRoom.id
+    };
+
+    const response = await server.post("/booking").set("Authorization", `Bearer ${token}`).send(body);
+
+    expect(response.status).toBe(httpStatus.FORBIDDEN);
+  });
+
+  it("if the user already has a reservation in a room, it should return 403", async () => {
+    const userCreate = await createUser();
+    const token = await generateValidToken(userCreate);
+    await createEnrollmentWithAddress(userCreate);
+    const hotelCreate = await createHotel();
+    const createRoom = await createRoomWithHotelId(hotelCreate.id);
+
+    createBooking(userCreate.id, createRoom.id);
+
+    const body = {
+      "roomId": createRoom.id
+    };
+
+    const response = await server.post("/booking").set("Authorization", `Bearer ${token}`).send(body);
+
+    expect(response.status).toBe(httpStatus.FORBIDDEN);
+  });
+
+  it("Must return status code 200 with bookingId", async () => {
+    const userCreate = await createUser();
+    const token = await generateValidToken(userCreate);
+    await createEnrollmentWithAddress(userCreate);
+    const hotelCreate = await createHotel();
+    const createRoom = await createRoomWithHotelId(hotelCreate.id);
+
+    const body = {
+      "roomId": createRoom.id
+    };
+
+    const response = await server.post("/booking").set("Authorization", `Bearer ${token}`).send(body);
+    
+    expect(response.status).toBe(httpStatus.OK);
+    expect(response.body).toEqual({ id: expect.any(Number) });
   });
 });
