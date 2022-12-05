@@ -215,6 +215,24 @@ describe("POST /booking", () => {
 
     expect(response.status).toBe(httpStatus.NOT_FOUND);
   });
+  it("if the user already has a booking registered, it should return 403", async () => {
+    const userCreate = await createUser();
+    const token = await generateValidToken(userCreate);
+    const hotelCreate = await createHotel();
+    const enrollment = await createEnrollmentWithAddress(userCreate);
+    const ticketType = await createTicketTypeWithHotel();
+    await createTicket(enrollment.id, ticketType.id, "PAID");
+    const createRoom = await createRoomWithHotelId(hotelCreate.id);
+    const createdBooking = await createBooking(userCreate.id, createRoom.id);
+   
+    const body = {
+      "roomId": createRoom.id
+    };
+
+    const response = await server.post("/booking").set("Authorization", `Bearer ${token}`).send(body);
+
+    expect(response.status).toBe(httpStatus.FORBIDDEN);
+  });
 
   it("Must return status code 200 with bookingId", async () => {
     const userCreate = await createUser();

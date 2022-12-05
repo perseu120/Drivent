@@ -13,7 +13,6 @@ async function getBookingByUserId(userId: number) {
 
 async function createBooking(roomId: number, userId: number) {
   const enrollment = await enrollmentRepository.findWithAddressByUserId(userId);
-
   if(!enrollment) throw notFoundError();
 
   const ticket = await ticketRepository.findTicketByEnrollmentId(enrollment.id);
@@ -28,10 +27,10 @@ async function createBooking(roomId: number, userId: number) {
  
   if(capacity <= booking.length) throw ForbiddenError();
   
-  booking.map(booking => {
-    if(booking.userId === userId || booking.User.id === userId) throw ForbiddenError();
-  });
-  
+  const bookingByUser = await bookingRepository.findBookingByUserId(userId);
+  console.log("kkkk", bookingByUser);
+  if(bookingByUser) throw ForbiddenError();
+ 
   const createBooking = await bookingRepository.creatBooking(userId, roomId);
 
   return createBooking;
